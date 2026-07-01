@@ -587,7 +587,8 @@
 
         function setupWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-            ws = new WebSocket(`${protocol}://${window.location.host}/ws`);
+            const wsPath = window.location.pathname.includes('/mail') ? '/mail/ws' : '/ws';
+            ws = new WebSocket(`${protocol}://${window.location.host}${wsPath}`);
 
             ws.onopen = () => {
                 updateStatus('Conectado', true);
