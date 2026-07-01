@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempmail - Correo Temporal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* ESTADO 1: SIN DIRECCIÓN */
+        .welcome-screen {
+            background: white;
+            border-radius: 16px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .welcome-screen.hidden {
+            display: none;
+        }
+
+        .logo {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-screen h1 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .welcome-screen p {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 48px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        /* ESTADO 2: CON DIRECCIÓN */
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .address-box {
+            background: #f8f8f8;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .address-text {
+            flex: 1;
+        }
+
+        .address-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .address-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }
+
+        .address-copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .address-copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .address-copy-btn.copied {
+            background: #4caf50;
+        }
+
+        .expires-info {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 150px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        /* EMAIL LIST */
+        .emails-section {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .emails-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .emails-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .emails-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-sync {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-sync:hover {
+            background: #5568d3;
+        }
+
+        .btn-clear {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #ff5252;
+        }
+
+        .btn-new {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-new:hover {
+            background: #45a049;
+        }
+
+        .emails-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .email-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            gap: 15px;
+        }
+
+        .email-item:hover {
+            background-color: #f8f8f8;
+        }
+
+        .email-item.active {
+            background-color: #f0f0ff;
+            border-left: 4px solid #667eea;
+        }
+
+        .email-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .email-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .email-from {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .email-subject {
+            color: #666;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+
+        .email-date {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .empty-emails {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        /* EMAIL VIEWER */
+        .email-viewer {
+            background: white;
+            border-radius: 16px;
+            margin-top: 20px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .email-viewer.active {
+            display: block;
+        }
+
+        .viewer-header {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .viewer-subject {
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .viewer-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .viewer-body {
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .viewer-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-delete {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn-delete:hover {
+            background: #ff5252;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .welcome-screen {
+                padding: 40px 20px;
+            }
+
+            .welcome-screen h1 {
+                font-size: 24px;
+            }
+
+            .dashboard-header {
+                padding: 20px;
+            }
+
+            .address-box {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .address-copy-btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .stats {
+                flex-direction: column;
+            }
+
+            .stat-card {
+                min-width: unset;
+            }
+
+            .viewer-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-online {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .status-online::before {
+            content: "●";
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+   <!-- PANTALLA DE BIENVENIDA -->
+    <div class="welcome-screen" id="welcome-screen">
+        <div class="logo">📧</div>
+        <h1>Tempmail</h1>
+        <p>Elige tu dirección de correo temporal y recibe emails sin exponer tu correo real.</p>
+        
+        <div style="background: #f8f8f8; padding: 30px; border-radius: 12px; margin: 30px 0; display: inline-block; width: 100%; max-width: 400px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input 
+                    type="text" 
+                    id="address-input" 
+                    placeholder="tuusuario" 
+                    maxlength="30"
+                    onkeypress="if(event.key==='Enter') generateAddress()"
+                    style="padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; flex: 1; font-family: monospace;"
+                >
+                <span style="font-size: 18px; color: #666;">@apionbot.com</span>
+            </div>
+            <button class="btn-generate" onclick="generateAddress()" style="width: 100%; margin-top: 15px;">Crear Dirección</button>
+            <p id="error-msg" style="color: #ff6b6b; margin-top: 10px; font-size: 14px; display: none;"></p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="dashboard" id="dashboard">
+        <!-- HEADER CON DIRECCIÓN -->
+        <div class="dashboard-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="dashboard-title">📧 Tu Dirección Temporal</h2>
+                <div class="status-online" id="status">Conectando...</div>
+            </div>
+
+            <div class="address-box">
+                <div class="address-text">
+                    <div class="address-label">Tu dirección de correo</div>
+                    <div class="address-value" id="address-display">—</div>
+                    <div class="expires-info">
+                        Expira en <span id="expires-time">—</span>
+                    </div>
+                </div>
+                <button class="address-copy-btn" onclick="copyAddress()" id="copy-btn">📋 Copiar</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-emails">0</div>
+                    <div class="stat-label">Correos Recibidos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="unread-emails">0</div>
+                    <div class="stat-label">No Leídos</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA DE CORREOS -->
+        <div class="emails-section">
+            <div class="emails-header">
+                <div class="emails-title">📬 Bandeja de Entrada</div>
+                <div class="emails-actions">
+                    <button class="btn-small btn-sync" onclick="syncEmails()">🔄 Sincronizar</button>
+                    <button class="btn-small btn-new" onclick="generateNewAddress()">➕ Nueva Dirección</button>
+                    <button class="btn-small btn-clear" onclick="clearAllEmails()">🗑️ Limpiar</button>
+                </div>
+            </div>
+            <div class="emails-list" id="emails-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 10px;">Cargando correos...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISOR DE CORREO -->
+        <div class="email-viewer" id="email-viewer">
+            <div class="viewer-header">
+                <div class="viewer-subject" id="viewer-subject"></div>
+                <div class="viewer-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">De:</span>
+                        <span id="viewer-from"></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Para:</span>
+                        <span id="viewer-to"></span>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #999;">
+                    <span id="viewer-date"></span>
+                </div>
+            </div>
+            <div class="viewer-body" id="viewer-body"></div>
+            <div class="viewer-actions">
+                <button class="btn-delete" onclick="deleteCurrentEmail()">🗑️ Eliminar Correo</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let currentAddressId = localStorage.getItem('currentAddressId');
+        let currentEmailId = null;
+        let emails = [];
+        let ws = null;
+
+        // ============= INICIALIZACIÓN =============
+
+        function init() {
+            if (currentAddressId) {
+                showDashboard();
+                loadEmails();
+                setupWebSocket();
+                updateExpireTime();
+            } else {
+                showWelcome();
+            }
+        }
+
+        function setupWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            ws = new WebSocket(`${protocol}://${window.location.host}/ws`);
+
+            ws.onopen = () => {
+                updateStatus('Conectado', true);
+                setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) ws.send('ping');
+                }, 30000);
+            };
+
+            ws.onmessage = () => {
+                loadEmails();
+            };
+
+            ws.onerror = () => updateStatus('Desconectado', false);
+            ws.onclose = () => {
+                updateStatus('Desconectado', false);
+                setTimeout(setupWebSocket, 5000);
+            };
+        }
+
+        function updateStatus(text, online) {
+            const status = document.getElementById('status');
+            if (status) {
+                status.textContent = text;
+                status.style.background = online ? '#d4edda' : '#f8d7da';
+                status.style.color = online ? '#155724' : '#721c24';
+            }
+        }
+
+        // ============= VISTAS =============
+
+        function showWelcome() {
+            document.getElementById('welcome-screen').classList.remove('hidden');
+            document.getElementById('dashboard').classList.remove('active');
+        }
+
+        function showDashboard() {
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('active');
+            loadAddressInfo();
+        }
+
+        // ============= DIRECCIÓN =============
+
+        async function generateAddress() {
+        const name = document.getElementById('address-input').value.trim();
+        const errorMsg = document.getElementById('error-msg');
+        
+        if (!name) {
+            errorMsg.textContent = 'Escribe un nombre para tu dirección';
+            errorMsg.style.display = 'block';
+            return;
+        }
+        
+        if (name.length < 3) {
+            errorMsg.textContent = 'El nombre debe tener al menos 3 caracteres';
+            errorMsg.style.display = 'block';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE}/api/address/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                errorMsg.textContent = data.detail || 'Error creando dirección';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            
+            currentAddressId = data.address_id;
+            localStorage.setItem('currentAddressId', currentAddressId);
+            localStorage.setItem(`expires_${currentAddressId}`, data.expires_at);
+            showDashboard();
+            loadAddressInfo();
+            loadEmails();
+            setupWebSocket();
+        } catch (error) {
+            errorMsg.textContent = 'Error: ' + error.message;
+            errorMsg.style.display = 'block';
+        }
+    }
+        async function loadAddressInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/api/address/${currentAddressId}`);
+                const address = await response.json();
+                document.getElementById('address-display').textContent = address.full_address;
+                updateExpireTime();
+            } catch (error) {
+                console.error('Error cargando dirección:', error);
+            }
+        }
+
+        function updateExpireTime() {
+            const expires = localStorage.getItem(`expires_${currentAddressId}`);
+            if (expires) {
+                const expiresDate = new Date(expires);
+                const now = new Date();
+                const diff = expiresDate - now;
+                const minutes = Math.floor(diff / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                document.getElementById('expires-time').textContent = `${minutes}m ${seconds}s`;
+                if (diff > 0) {
+                    setTimeout(updateExpireTime, 1000);
+                }
+            }
+        }
+
+        function copyAddress() {
+            const address = document.getElementById('address-display').textContent;
+            navigator.clipboard.writeText(address);
+            const btn = document.getElementById('copy-btn');
+            btn.textContent = '✅ Copiado';
+            setTimeout(() => btn.textContent = '📋 Copiar', 2000);
+        }
+
+        function generateNewAddress() {
+            localStorage.removeItem('currentAddressId');
+            currentAddressId = null;
+            emails = [];
+            currentEmailId = null;
+            
+            // Limpiar input
+            const input = document.getElementById('address-input');
+            if (input) input.value = '';
+            
+            // Volver a bienvenida
+            showWelcome();
+        }
+
+        // ============= CORREOS =============
+
+        async function loadEmails() {
+            try {
+                const response = await fetch(`${API_BASE}/api/emails/${currentAddressId}`);
+                const data = await response.json();
+                emails = data.emails;
+                updateStats();
+                renderEmails();
+            } catch (error) {
+                console.error('Error cargando correos:', error);
+            }
+        }
+
+        function renderEmails() {
+            const list = document.getElementById('emails-list');
+            
+            if (emails.length === 0) {
+                list.innerHTML = '<div class="empty-emails"><div class="empty-icon">📭</div><p>Sin correos aún</p></div>';
+                return;
+            }
+
+            list.innerHTML = emails.map(email => `
+                <div class="email-item ${currentEmailId === email.id ? 'active' : ''}" onclick="viewEmail(${email.id})">
+                    <div class="email-avatar">${email.email_from[0].toUpperCase()}</div>
+                    <div class="email-content">
+                        <div class="email-from">${email.email_from}</div>
+                        <div class="email-subject">${email.subject}</div>
+                        <div class="email-date">${new Date(email.received_at).toLocaleString()}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            const total = emails.length;
+            const unread = emails.filter(e => !e.read).length;
+            document.getElementById('total-emails').textContent = total;
+            document.getElementById('unread-emails').textContent = unread;
+        }
+
+        // ============= VER CORREO =============
+
+        async function viewEmail(emailId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/emails/detail/${emailId}`);
+                const email = await response.json();
+
+                currentEmailId = emailId;
+                document.getElementById('viewer-subject').textContent = email.subject;
+                document.getElementById('viewer-from').textContent = email.email_from;
+                document.getElementById('viewer-to').textContent = email.email_to;
+                document.getElementById('viewer-date').textContent = new Date(email.received_at).toLocaleString();
+                document.getElementById('viewer-body').textContent = email.body_text || email.body_html;
+
+                document.getElementById('email-viewer').classList.add('active');
+                renderEmails();
+                loadEmails();
+            } catch (error) {
+                console.error('Error cargando correo:', error);
+            }
+        }
+
+        async function deleteCurrentEmail() {
+            if (!currentEmailId) return;
+            if (!confirm('¿Eliminar este correo?')) return;
+
+            try {
+                await fetch(`${API_BASE}/api/emails/${currentEmailId}/delete`, { method: 'POST' });
+                document.getElementById('email-viewer').classList.remove('active');
+                currentEmailId = null;
+                loadEmails();
+            } catch (error) {
+                console.error('Error eliminando correo:', error);
+            }
+        }
+
+        async function clearAllEmails() {
+            if (!confirm('¿Eliminar TODOS los correos?')) return;
+
+            try {
+                await fetch(`${API_BASE}/api/emails/${currentAddressId}/clear`, { method: 'POST' });
+                loadEmails();
+            } catch (error) {
+                console.error('Error limpiando:', error);
+            }
+        }
+
+        async function syncEmails() {
+            try {
+                await fetch(`${API_BASE}/api/sync`, { method: 'POST' });
+                loadEmails();
+            } catch (error) {
+                console.error('Error sincronizando:', error);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
