@@ -564,7 +564,9 @@
     </div>
 
     <script>
-        const API_BASE = window.location.origin;
+        const API_BASE = window.location.pathname.includes('/mail') 
+            ? window.location.origin + '/mail'
+            : window.location.origin;
         let currentAddressId = localStorage.getItem('currentAddressId');
         let currentEmailId = null;
         let emails = [];
@@ -700,7 +702,30 @@
 
         function copyAddress() {
             const address = document.getElementById('address-display').textContent;
-            navigator.clipboard.writeText(address);
+            
+            // Fallback para navegadores viejos
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(address).then(() => {
+                    showCopyFeedback();
+                }).catch(() => {
+                    copyFallback(address);
+                });
+            } else {
+                copyFallback(address);
+            }
+        }
+
+        function copyFallback(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showCopyFeedback();
+        }
+
+        function showCopyFeedback() {
             const btn = document.getElementById('copy-btn');
             btn.textContent = '✅ Copiado';
             setTimeout(() => btn.textContent = '📋 Copiar', 2000);
